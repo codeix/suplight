@@ -19,7 +19,7 @@ const uint16_t mask_back_light =  0b1110000000000;
 CRGB leds[NUM_LEDS];
 
 int selectedMode = 0;
-int intensity = FADE_MAX_STEPS;
+int intensity = 0;
 
 
 void applyColor(uint16_t mask, const struct CRGB& color, uint8_t lamp) {
@@ -55,6 +55,13 @@ void blink_mode() {
   } else {
     fill_solid(leds, NUM_LEDS, CRGB::Black);
   }
+}
+
+void sinus_mode() {
+  const uint8_t f = 65536 / (4 * 1000);
+  uint16_t pos = sin16( ((millis() * f) % 65536) ) + 32768;
+  uint8_t color = 255 * (pos / 65536.0f);
+  fill_solid(leds, NUM_LEDS, CRGB( color, color, color));
 }
 
 void boat_mode() {
@@ -107,18 +114,13 @@ void rainbow_mode() {
   }
 }
 
-void (*funcs[])(void) = {off_mode, full_mode, front_mode, blink_mode, boat_mode, rainbow_mode};
+void (*funcs[])(void) = {full_mode, front_mode, blink_mode, sinus_mode, boat_mode, rainbow_mode};
 uint8_t funcs_size = sizeof(funcs)/sizeof(funcs[0]);
 
 void intensityChange() {
   intensity--;
-  if(intensity == 0) {
-    selectedMode = 0;
-  } else if (intensity < 0) {
+  if (intensity < 0) {
     intensity = FADE_MAX_STEPS;
-  }
-  if (intensity != 0 && selectedMode == 0){
-    selectedMode = 1;
   }
 }
 
@@ -128,7 +130,7 @@ void modeChange() {
   }
   selectedMode++;
   if (!(selectedMode < funcs_size)) {
-    selectedMode = 1;
+    selectedMode = 0;
   }
 }
 
@@ -143,14 +145,22 @@ void setup() {
 
     pinMode(BUTTON_MODE_PIN, INPUT_PULLUP);
     attachPinChangeInterrupt(digitalPinToPCINT(BUTTON_MODE_PIN), modeChange, RISING);
+
+    boat_mode();
+    FastLED.show();
+    delay(100);
+    off_mode();
+    FastLED.show();
 }
 
 
 void loop() {
-  funcs[selectedMode]();
-  LEDS.setBrightness((255 / FADE_MAX_STEPS) * intensity);
-  FastLED.show();
-  if (selectedMode == 0)  {
+  const uint8_t step_map[FADE_MAX_STEPS + 1] = {0, 30, 100, 255}; 
+  if (intensity == 0) {
+    off_mode();
     LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
   }
+  funcs[selectedMode]();
+  LEDS.setBrightness(step_map[intensity]);
+  FastLED.show();
 }
