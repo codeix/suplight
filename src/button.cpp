@@ -26,16 +26,29 @@ void Button::isrChange() {
 };
 
 void Button::isrRaising() {
-    this->click();
+    _isPressed = true;
+    pressedTime = millis();
 };
 
 void Button::isrFalling() {
-    
+    if(longClickPending()) {
+        this->longClick();
+    } else {
+        this->click();
+    }
+    _isPressed = false;
 };
 
+bool Button::longClickPending() {
+    if (!_isPressed) {
+        return false;
+    }
+    return (millis() - pressedTime) > LONG_CLICK;
+}
 
-
-
+bool Button::isPressed() {
+    return _isPressed;
+}
 
 
 

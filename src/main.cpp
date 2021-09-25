@@ -30,10 +30,6 @@ void applyColor(uint16_t mask, const struct CRGB& color, uint8_t lamp) {
     }
 }
 
-void off_mode() {
-  fill_solid(leds, NUM_LEDS, CRGB::Black);
-}
-
 void full_mode() {
   fill_solid(leds, NUM_LEDS, CRGB::White);
 }
@@ -113,6 +109,10 @@ void rainbow_mode() {
   }
 }
 
+void display_off() {
+  fill_solid(leds, NUM_LEDS, CRGB::Black);
+}
+
 void display_starting() {
   fill_solid(leds, NUM_LEDS, CRGB::Black);
   applyColor(mask_side_light, CRGB::Yellow, 0);
@@ -121,6 +121,10 @@ void display_starting() {
 
 void display_lock() {
   fill_solid(leds, NUM_LEDS, CRGB::Black);
+  bool beat = (millis() / 50) % 2;
+  if(beat) {
+    return;
+  }
   CRGB color;
   if (lock) {
     color = CRGB::Red;
@@ -135,6 +139,9 @@ void (*funcs[])(void) = {full_mode, front_mode, blink_mode, sinus_mode, boat_mod
 uint8_t funcs_size = sizeof(funcs)/sizeof(funcs[0]);
 
 void intensityClick() {
+  if (lock) {
+    return;
+  }
   intensity--;
   if (intensity < 0) {
     intensity = FADE_MAX_STEPS;
@@ -142,6 +149,9 @@ void intensityClick() {
 }
 
 void modeClick() {
+  if (lock) {
+    return;
+  }
   if (intensity == 0) {
     return;
   }
@@ -151,29 +161,43 @@ void modeClick() {
   }
 }
 
+void longClick() {
+  if (buttonIntensity->longClickPending() && buttonMode->longClickPending()) {
+    lock = !lock;
+  }
+}
+
 void setup() {
-    buttonIntensity->attach(intensityClick, nullptr);
-    buttonMode->attach(modeClick, nullptr);
+    buttonIntensity->attach(intensityClick, longClick);
+    buttonMode->attach(modeClick, longClick);
    	delay(2000);
     FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
 
     display_starting();
     FastLED.show();
     delay(100);
-    off_mode();
+    display_off();
     FastLED.show();
 }
 
 
 void loop() {
   static const uint8_t step_map[FADE_MAX_STEPS + 1] = {0, 30, 100, 255}; 
-  if (intensity == 0) {
-    off_mode();
-    LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
+  
+  if (buttonIntensity->longClickPending() && buttonMode->longClickPending()) {
+    LEDS.setBrightness(255);
+    display_lock();
+    FastLED.show();
+  } else {
+    if (intensity == 0 && !buttonIntensity->isPressed() && !buttonMode->isPressed()) {
+      display_off();
+      FastLED.show();
+      LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
+    }
+
+    funcs[selectedMode]();
+
+    LEDS.setBrightness(step_map[intensity]);
+    FastLED.show();
   }
-
-  funcs[selectedMode]();
-
-  LEDS.setBrightness(step_map[intensity]);
-  FastLED.show();
 }

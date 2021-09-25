@@ -6,4 +6,4 @@
 #define BUTTON_MODE_PIN A3
 #define FADE_MAX_STEPS 3
 
-#define LONG_CLICK 5 * 1000
+#define LONG_CLICK 3 * 1000
