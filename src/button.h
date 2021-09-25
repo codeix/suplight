@@ -10,18 +10,15 @@ class Button {
         unsigned long last_raising;
         void (*click)(void);
         void (*longClick)(void);
-        void (*isrRaising)();
-        void (*isrFalling)();
-        void isrRaisingCallback();
-        void isrFallingCallback();
+        void isrRaising();
+        void isrFalling();
+        void isrChange();
     public:
-        Button(uint8_t pin, void (*isrRaising)(), void (*isrFalling)());
+        Button(uint8_t pin, void (*isrChange)());
         bool longClickPending();
         void Button::attach(void(*click)(void), void(*longClick)(void));
-        friend void buttonIntensityRaising();
-        friend void buttonIntensityFalling();
-        friend void buttonModeRaising();
-        friend void buttonModeFalling();
+        friend void buttonIntensityChange();
+        friend void buttonModeChange();
 };
 
 extern Button* buttonIntensity; 

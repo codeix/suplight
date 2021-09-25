@@ -1,16 +1,15 @@
 #include <Arduino.h>
 #include <PinChangeInterrupt.h>
+#include <FastLED.h>
 
 #include "button.h"
 #include "configuration.h"
 
 
 
-Button::Button(uint8_t _pin, void (*_isrRaising)(), void (*_isrFalling)()) :
-pin(_pin), isrRaising(_isrRaising), isrFalling(_isrFalling) {
+Button::Button(uint8_t _pin, void (*isrChange)()) : pin(_pin) {
     pinMode(pin, INPUT_PULLUP);
-    attachPinChangeInterrupt(digitalPinToPCINT(pin), isrRaising, RISING);
-    attachPinChangeInterrupt(digitalPinToPCINT(pin), isrFalling, FALLING);
+    attachPinChangeInterrupt(digitalPinToPCINT(pin), isrChange, CHANGE);
 };
 
 void Button::attach(void(*_click)(void), void(*_longClick)(void)) {
@@ -18,11 +17,19 @@ void Button::attach(void(*_click)(void), void(*_longClick)(void)) {
     longClick = _longClick;
 }
 
-void Button::isrRaisingCallback() {
+void Button::isrChange() {
+    if(digitalRead(pin)) {
+        isrRaising();
+    } else {
+        isrFalling();
+    }
+};
+
+void Button::isrRaising() {
     this->click();
 };
 
-void Button::isrFallingCallback() {
+void Button::isrFalling() {
     
 };
 
@@ -33,24 +40,13 @@ void Button::isrFallingCallback() {
 
 
 
-
-
-
-void buttonIntensityRaising(){
-    buttonIntensity->isrRaisingCallback();
+void buttonIntensityChange() {
+    buttonIntensity->isrChange();
 }
 
-void buttonIntensityFalling(){
-    buttonIntensity->isrFallingCallback();
+void buttonModeChange(){
+    buttonMode->isrChange();
 }
 
-void buttonModeRaising(){
-    buttonMode->isrRaisingCallback();
-}
-
-void buttonModeFalling(){
-    buttonMode->isrFallingCallback();
-}
-
-extern Button* buttonIntensity = new Button(BUTTON_INTENSITY_PIN, buttonIntensityRaising, buttonIntensityFalling); 
-extern Button* buttonMode = new Button(BUTTON_MODE_PIN, buttonModeRaising, buttonModeFalling); 
+extern Button* buttonIntensity = new Button(BUTTON_INTENSITY_PIN, buttonIntensityChange); 
+extern Button* buttonMode = new Button(BUTTON_MODE_PIN, buttonModeChange);
