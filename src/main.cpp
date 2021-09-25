@@ -3,13 +3,10 @@
 #include <PinChangeInterrupt.h>
 #include <LowPower.h>
 
-#define NUM_LAMP 2
-#define NUM_LEDS 13 * NUM_LAMP
-#define DATA_PIN 10
+#include "configuration.h"
+#include "button.h"
 
-#define BUTTON_INTENSITY_PIN A1
-#define BUTTON_MODE_PIN A3
-#define FADE_MAX_STEPS 3
+
 
 const uint16_t mask_front_light = 0b0000000000111;
 const uint16_t mask_side_light =  0b0000111110000;
@@ -20,6 +17,8 @@ CRGB leds[NUM_LEDS];
 
 int selectedMode = 0;
 int intensity = 0;
+
+bool lock = false;
 
 
 void applyColor(uint16_t mask, const struct CRGB& color, uint8_t lamp) {
@@ -114,17 +113,35 @@ void rainbow_mode() {
   }
 }
 
+void display_starting() {
+  fill_solid(leds, NUM_LEDS, CRGB::Black);
+  applyColor(mask_side_light, CRGB::Yellow, 0);
+  applyColor(mask_side_light, CRGB::Yellow, 1);
+}
+
+void display_lock() {
+  fill_solid(leds, NUM_LEDS, CRGB::Black);
+  CRGB color;
+  if (lock) {
+    color = CRGB::Red;
+  }  else {
+    color = CRGB::Green;
+  }
+  applyColor(mask_side_light, color, 0);
+  applyColor(mask_side_light, color, 1);
+}
+
 void (*funcs[])(void) = {full_mode, front_mode, blink_mode, sinus_mode, boat_mode, rainbow_mode};
 uint8_t funcs_size = sizeof(funcs)/sizeof(funcs[0]);
 
-void intensityChange() {
+void intensityClick() {
   intensity--;
   if (intensity < 0) {
     intensity = FADE_MAX_STEPS;
   }
 }
 
-void modeChange() {
+void modeClick() {
   if (intensity == 0) {
     return;
   }
@@ -134,19 +151,13 @@ void modeChange() {
   }
 }
 
-
 void setup() {
+    buttonIntensity->attach(intensityClick, nullptr);
+    buttonMode->attach(modeClick, nullptr);
    	delay(2000);
     FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
 
-
-    pinMode(BUTTON_INTENSITY_PIN, INPUT_PULLUP);
-    attachPinChangeInterrupt(digitalPinToPCINT(BUTTON_INTENSITY_PIN), intensityChange, RISING);
-
-    pinMode(BUTTON_MODE_PIN, INPUT_PULLUP);
-    attachPinChangeInterrupt(digitalPinToPCINT(BUTTON_MODE_PIN), modeChange, RISING);
-
-    boat_mode();
+    display_starting();
     FastLED.show();
     delay(100);
     off_mode();
@@ -155,12 +166,14 @@ void setup() {
 
 
 void loop() {
-  const uint8_t step_map[FADE_MAX_STEPS + 1] = {0, 30, 100, 255}; 
+  static const uint8_t step_map[FADE_MAX_STEPS + 1] = {0, 30, 100, 255}; 
   if (intensity == 0) {
     off_mode();
     LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
   }
+
   funcs[selectedMode]();
+
   LEDS.setBrightness(step_map[intensity]);
   FastLED.show();
 }
