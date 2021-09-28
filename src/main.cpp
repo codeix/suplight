@@ -41,10 +41,7 @@ void front_mode() {
 }
 
 void blink_mode() {
-  static uint16_t sLastMillis = 0;
-  unsigned long ms = millis();
-  unsigned long deltams = ms - sLastMillis ;
-  uint8_t beat = (deltams % 1000) / 100;
+  uint8_t beat = (millis() % 1000) / 100;
   if (beat == 1 || beat == 3) {
     fill_solid(leds, NUM_LEDS, CRGB::White);
   } else {
@@ -63,8 +60,8 @@ void boat_mode() {
   fill_solid(leds, NUM_LEDS, CRGB::Black);
   applyColor(mask_front_light, CRGB::White, 0);
   applyColor(mask_front_light, CRGB::White, 1);
-  applyColor(mask_side_light, CRGB::Red, 0);
   applyColor(mask_side_light, CRGB::Green, 0);
+  applyColor(mask_side_light, CRGB::Red, 1);
   applyColor(mask_back_light, CRGB::White, 0);
   applyColor(mask_back_light, CRGB::White, 1);
 }
