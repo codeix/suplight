@@ -27,7 +27,8 @@
 #define LOW_RANGE 10
 #define HIGH_RANGE 16
 
-#define MEDIAN_SIZE 100
+#define MEDIAN_SIZE_VOL 100
+#define MEDIAN_SIZE_POT 10
 
 #define DISPLAY_TIME_CHANGE 2*1000
 
@@ -79,15 +80,15 @@ float convertToVoltageAndRound(int sensor) {
 
 float readPotMeterLow() {
   static int index = -1;
-  static int queue[MEDIAN_SIZE];
-  int sensor = median(analogRead(POT_LOW_PIN), &index, queue, MEDIAN_SIZE);
+  static int queue[MEDIAN_SIZE_POT];
+  int sensor = median(analogRead(POT_LOW_PIN), &index, queue, MEDIAN_SIZE_POT);
   return convertToVoltageAndRound(sensor);
 }
 
 float readPotMeterHigh() {
   static int index = -1;
-  static int queue[MEDIAN_SIZE];
-  int sensor = median(analogRead(POT_HIGH_PIN), &index, queue, MEDIAN_SIZE);
+  static int queue[MEDIAN_SIZE_POT];
+  int sensor = median(analogRead(POT_HIGH_PIN), &index, queue, MEDIAN_SIZE_POT);
   return convertToVoltageAndRound(sensor);
 }
 
@@ -148,7 +149,7 @@ void setup()
 
   float potMeterLow;
   float potMeterHigh;
-  for(int i = 0; i < MEDIAN_SIZE; i++){
+  for(int i = 0; i < MEDIAN_SIZE_POT; i++){
     potMeterLow = readPotMeterLow();
     potMeterHigh = readPotMeterHigh();
   }
@@ -168,9 +169,9 @@ void setup()
 void loop()
 {
   static int index = -1;
-  static int queue[MEDIAN_SIZE];
+  static int queue[MEDIAN_SIZE_VOL];
  
-  int sensor = median(analogRead(VM), &index, queue, MEDIAN_SIZE);
+  int sensor = median(analogRead(VM), &index, queue, MEDIAN_SIZE_VOL);
   float vOut = sensor * (REFERENCE_VOLTAGE / 1023.0);
   float vIn = vOut * ((R1 + R2) / R2); 
 
@@ -226,5 +227,3 @@ void loop()
                 SPI_OFF, USART0_OFF, TWI_OFF);
 
 }
-
-
