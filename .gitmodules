@@ -1,0 +1,3 @@
+[submodule "lib/TimerTwo"]
+	path = lib/TimerTwo
+	url = https://github.com/theAndreas/TimerTwo.git
